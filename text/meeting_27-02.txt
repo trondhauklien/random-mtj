@@ -1,0 +1,5 @@
+- understand mesh size -> understand if RAM enough for single variable M
+- input file
+- write directly results to output file instead than in variable history
+- M is a 6-dimensional array (vector field)
+- computation done only inside pillar? ("elliptical" mesh)
