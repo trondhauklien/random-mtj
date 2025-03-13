@@ -4,3 +4,4 @@
 - M is a 6-dimensional array (vector field)
 - computation done only inside pillar? ("elliptical" mesh)
 - rename M to m
+- correct LLG equation according to teacher and remove SST/thermal fluctuations
