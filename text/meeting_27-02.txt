@@ -1,7 +1,7 @@
 - understand mesh size -> understand if RAM enough for single variable M
 - input file
 - write directly results to output file instead than in variable history
-- M is a 6-dimensional array (vector field)
-- computation done only inside pillar? ("elliptical" mesh)
+- M is a 6-dimensional array (vector field) -> NO! MACROSPIN MODEL, uniform M
+- computation done only inside pillar? ("elliptical" mesh) -> NO! macrospin implies no need of a mesh (right?)
 - rename M to m
 - correct LLG equation according to teacher and remove SST/thermal fluctuations
