@@ -1,0 +1,8 @@
+- understand mesh size -> understand if RAM enough for single variable M -> NOT concerned for macrospin model
+- input file/parallelization
+- write directly results to output file instead than in variable history
+- M is a 6-dimensional array (vector field) -> NO! MACROSPIN MODEL, uniform M
+- computation done only inside pillar? ("elliptical" mesh) -> NO! macrospin implies no need of a mesh
+- rename M to m
+- correct LLG equation according to eq. 21/24 of pdf file and remove SST/thermal fluctuations for first phase
+- (optional for the future): implement micromagnetic solver with 3d mesh (much more computationally intensive)
