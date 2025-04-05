@@ -7,3 +7,6 @@ GYROMAGNETIC_RATIO: float = physical_constants["electron gyromag. ratio"][0]
 
 k_B: float = Boltzmann
 """BoltzmannConstant (J/K)"""
+
+VACUUM_PERMEABILITY: float = physical_constants["vacuum mag. permeability"][0]
+"""Vacuum permeability (H/m) or (N/A^2)"""
