@@ -15,7 +15,8 @@ def main() -> None:
     dt = 1e-13  # time step (s)
     time_series = np.arange(0, Tn, dt)
 
-    m = init_m(np.array([0, 1, 0]), len(time_series))
+    m = init_m(np.array([0, 0, 1]), len(time_series))
+    p = np.array([0, 0, 1], dtype=np.float64)
 
     base_path = Path(__file__).parent.parent
     output_dir = base_path / "output"
@@ -28,6 +29,8 @@ def main() -> None:
     T = 300  # Temperature (K)
     Ms = 800e3  # Saturation magnetization (A/m)
     V = 1e-27  # Volume of the magnetic particle (m^3)
+    a_par = 1e-3  # A_parallel(V), in (T)
+    a_perp = 2e-4  # A_perpendicular(V), in (T)
 
     for i, t in enumerate(time_series[:-1]):
         H_th = compute_thermal_field(alpha, T, Ms, V, dt)
@@ -36,8 +39,16 @@ def main() -> None:
         H_eff = calc_Heff(np.array([1, 0, 0]))
 
         # Calculate the magnetization for the next time step
-        m[i + 1] = LLG_Heun(m[i], H_eff)
-        pass
+        m[i + 1] = LLG_Heun(
+            m[i],
+            p,
+            H_eff,
+            H_th,
+            dt,
+            alpha,
+            a_perp,
+            a_par,
+        )
 
     np.savetxt(output_file_path, m, delimiter=",")
 
