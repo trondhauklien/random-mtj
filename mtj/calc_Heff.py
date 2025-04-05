@@ -21,4 +21,4 @@ def calc_Heff(
 
     # The implementation goes here
 
-    return np.array([0,0,0])  # TODO Replace this after implementing function
+    return np.array([0, 0, 0])  # TODO Replace this after implementing function

@@ -20,4 +20,3 @@ def init_m(m0: npt.NDArray[np.float64], Nt: int) -> npt.NDArray[np.float64]:
     m = np.zeros((Nt, len(m0)), dtype=np.float64)
     m[0] = m0
     return m
-
