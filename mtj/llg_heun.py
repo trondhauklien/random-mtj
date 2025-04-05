@@ -1,7 +1,7 @@
-import numpy.typing as ntp
 import numpy as np
+import numpy.typing as ntp
 
-from constants import GYROMAGNETIC_RATIO, k_B
+from mtj.constants import GYROMAGNETIC_RATIO, k_B
 
 
 def LLG_Heun(
@@ -26,4 +26,4 @@ def LLG_Heun(
 
     # The implementation goes here
 
-    pass  # TODO Remove this after implementing function
+    return np.array([0,0,0])  # TODO Replace this after implementing function

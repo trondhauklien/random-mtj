@@ -1,5 +1,5 @@
-import numpy.typing as ntp
 import numpy as np
+import numpy.typing as ntp
 
 
 def calc_Hfl(
@@ -21,4 +21,4 @@ def calc_Hfl(
 
     # The implementation goes here
 
-    pass  # TODO Remove this after implementing function
+    return np.array([0,0,0])  # TODO Replace this after implementing function

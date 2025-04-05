@@ -1,12 +1,14 @@
-import numpy as np
-from calc_Heff import calc_Heff
-from init import init_m
-from llg_heun import LLG_Heun
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+
+from mtj.calc_Heff import calc_Heff
+from mtj.init import init_m
+from mtj.llg_heun import LLG_Heun
 
 
-def main():
+def main() -> None:
     # Get the initial magnetization
     dt = 1e-9  # seconds
     Tn = 1e-6  # seconds
@@ -21,9 +23,9 @@ def main():
         base_path / f"output/{datetime.now().strftime('%Y-%m-%d-%H%M%S')}-mag.csv"
     )
 
-    for i, t in enumerate(T):
+    for i, t in enumerate(T[:-1]):
         # Calculate the effective field
-        H_eff = calc_Heff(m)
+        H_eff = calc_Heff("1, 0, 0")
 
         # Calculate the magnetization for the next time step
         m[i + 1] = LLG_Heun(m[i], H_eff)

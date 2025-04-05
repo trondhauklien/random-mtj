@@ -1,5 +1,5 @@
-import numpy.typing as npt
 import numpy as np
+import numpy.typing as npt
 
 
 def init_m(m0: npt.NDArray[np.float64], Nt: int) -> npt.NDArray[np.float64]:
