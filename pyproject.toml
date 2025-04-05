@@ -2,8 +2,11 @@
 name = "random-mtj"
 version = "0.0.1"
 
+[project.scripts]
+random-mtj = "mtj.main:main"
+
 [tool.setuptools]
-package-dir = {"" = "mtj"}
+packages = ["mtj"]
 
 [tool.ruff]
 #   To make flake ignore certain lines of code, use
