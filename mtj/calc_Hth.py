@@ -11,11 +11,6 @@ def compute_thermal_field(
     Compute a single 3D vector of thermal magnetic field H_th
     with zero mean and variance based on fluctuation-dissipation theorem.
 
-    Parameters
-    ----------
-        temperature: float
-            in Kelvin.
-
     Returns
     -------
         H_th: array_like
