@@ -1,0 +1,34 @@
+[project]
+name = "random-mtj"
+version = "0.0.1"
+
+[project.scripts]
+random-mtj = "mtj.main:main"
+
+[tool.setuptools]
+packages = ["mtj"]
+
+[tool.ruff]
+#   To make flake ignore certain lines of code, use
+#   noqa: errorcode
+lint.select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "setup.py",
+    "build",
+    "dist",
+    "releases",
+    ".venv",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".vscode",
+    ".github"
+]

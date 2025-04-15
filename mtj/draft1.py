@@ -13,7 +13,7 @@ num_steps = 10000 #NumberofIterations
 #Initial magnetization (normalized)
 M = np.array([1, 0, 0])
 M = M / np.linalg.norm(M)
-sigma = np.sqrt(2 * alpha * k_B T / (gamma * M_s * V)) #ThermalFieldVariance
+sigma = np.sqrt(2 * alpha * k_B * T / (gamma * M_s * V)) #ThermalFieldVariance
 M_history = np.zeros((num_steps, 3)) #StoringResults
 def llg_rhs(M, H_total):
     """Computes the RHS of the LLG equation using Runge-Kutta."""
