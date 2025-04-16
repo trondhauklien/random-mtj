@@ -8,6 +8,10 @@ def calc_Heff(
     K_u: float,
     M_s: float,
     u_k: ntp.NDArray[np.float64],
+    p: ntp.NDArray[np.float64],
+    a_para: float,
+    a_orth: float,
+    V: float,
     H_app: ntp.NDArray[np.float64],
     N: ntp.NDArray[np.float64]
 ) -> ntp.NDArray[np.float64]:
@@ -18,11 +22,19 @@ def calc_Heff(
         m: array_like
             Current magnetization as a Numpy array of floats with shape (3,).
         K_u: float
-            First order crystal anisotropy constant (J/m^3)
+            First order crystal anisotropy constant (J/m^3).
         M_s: float
-            Saturation magnetization module (A/m)
+            Saturation magnetization module (A/m).
         u_k: array_like
             Direction of easy axis as a Numpy array of floats with shape (3,).
+        p: array_like
+            Spin polarization unit vector as a Numpy array of floats with shape (3,).
+        a_para: float
+            Parallel STT coefficient.
+        a_ortho: float
+            Orthogonal STT coefficient.
+        V: float
+            Applied voltage (V).
         H_app: array_like
             Externally applied magnetic field as a Numpy array of floats with shape (3,).
         N: array_like
@@ -40,4 +52,7 @@ def calc_Heff(
     # demagnetization energy term
     H_d = -M_s*(np.matmul(N, m))
 
-    return H_mca + H_app + H_d
+    # STT term
+    H_STT = a_para*np.cross(m,p) - a_orth*p
+
+    return H_mca + H_app + H_d + H_STT
