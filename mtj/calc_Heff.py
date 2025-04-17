@@ -53,6 +53,6 @@ def calc_Heff(
     H_d = -M_s*(np.matmul(N, m))
 
     # STT term
-    H_STT = a_para*np.cross(m,p) - a_orth*p
+    H_STT = a_para*V*np.cross(m,p) - a_orth*p*(V**2)
 
     return H_mca + H_app + H_d + H_STT
