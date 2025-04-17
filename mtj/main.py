@@ -45,6 +45,7 @@ def main() -> None:
         print("Thermal Field Vector H_th:", H_th)
         # Calculate the effective field
         H_eff = calc_Heff(m[i],
+                          K_u,
                           M_s,
                           u_k,
                           p,
