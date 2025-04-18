@@ -13,7 +13,8 @@ def calc_Heff(
     a_orth: float,
     V: float,
     H_app: ntp.NDArray[np.float64],
-    N: ntp.NDArray[np.float64]
+    N: ntp.NDArray[np.float64],
+    stt_enable: bool = True,
 ) -> ntp.NDArray[np.float64]:
     """Calculates the effective field
 
@@ -39,7 +40,8 @@ def calc_Heff(
             Externally applied magnetic field as a Numpy array of floats with shape (3,).
         N: array_like
             Demagnetization tensor as a Numpy array of floats with shape (3,3).
-
+        stt_enable: bool
+            True if the STT contribution should be computed.
 
     Returns
     -------
@@ -53,6 +55,9 @@ def calc_Heff(
     H_d = -M_s*(np.matmul(N, m))
 
     # STT term
-    H_STT = a_para*V*np.cross(m,p) - a_orth*p*(V**2)
+    if stt_enable:
+        H_STT = a_para*V*np.cross(m,p) - a_orth*p*(V**2)
+    else:
+        H_STT = np.zeros(3, dtype=np.float64)
 
     return H_mca + H_app + H_d + H_STT
