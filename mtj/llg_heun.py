@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.typing as ntp
 
-from mtj.constants import GYROMAGNETIC_RATIO
+from mtj.constants import GYROMAGNETIC_RATIO, VACUUM_PERMEABILITY
 
 
 def LLG_rhs(m_vec, H_vec, gamma0, alpha):
@@ -20,8 +20,7 @@ def LLG_Heun(
     H_th: ntp.NDArray[np.float64],
     dt: float,
     alpha: float,
-    # TODO Verify this value
-    gamma0: float = 2.21e5,  # gyromagnetic ratio in (m/As)
+    gamma0: float = VACUUM_PERMEABILITY * GYROMAGNETIC_RATIO,
 ) -> ntp.NDArray[np.float64]:
     """Calculates the next time step magnetization
 
@@ -38,7 +37,7 @@ def LLG_Heun(
     m_temp = m_i + dt * k1
     m_temp /= np.linalg.norm(m_temp)  # keep magnetization normalized
 
-    k2 = LLG_rhs( m_temp, H_tot, gamma0, alpha)
+    k2 = LLG_rhs(m_temp, H_tot, gamma0, alpha)
     m_next = m_i + (dt / 2) * (k1 + k2)
     m_next /= np.linalg.norm(m_next)  # renormalize
 
