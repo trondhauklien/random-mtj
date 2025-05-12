@@ -55,6 +55,7 @@ def main() -> None:
             Vol,
             dt,
             alpha,
+            stt_enable=True,
             recompute_H_th=True,
             recompute_H_eff=True
         )
