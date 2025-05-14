@@ -36,7 +36,7 @@ def main() -> None:
     N = np.array([[1,0,0],[0,1,0],[0,0,1]]) # demagnetization tensor
 
     for i, t in enumerate(time_series[:-1]):
-        params = {
+        params: MaterialProps = {
            "K_u": K_u,
             "M_s": M_s,
             "u_k": u_k,
@@ -48,16 +48,14 @@ def main() -> None:
             "N": N}
 
         # Calculate the magnetization for the next time step
-        m[i + 1] = LLG_Heun(
-            m[i],
-            params,
+        m[i + 1] = LLG_Heun(m[i],
             T,
             Vol,
             dt,
             alpha,
-            stt_enable=True,
-            recompute_H_th=True,
-            recompute_H_eff=True
+            stt_enable=False,
+            recompute_H_th=False,
+            recompute_H_eff=False, **params
         )
 
     np.savetxt(output_file_path, m, delimiter=",")
