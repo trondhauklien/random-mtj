@@ -1,56 +1,48 @@
+from typing import Unpack
 import numpy as np
-import numpy.typing as ntp
+import numpy.typing as npt
 import scipy.constants as cst
+from mtj.typing import MaterialProps
 
 
 def calc_Heff(
-    m: ntp.NDArray[np.float64],
-    params: dict,
+    m: npt.NDArray[np.float64 | np.int_],
     stt_enable: bool = True,
-) -> ntp.NDArray[np.float64]:
+    **kwargs: Unpack[MaterialProps],
+) -> npt.NDArray:
     """Calculates the effective field
 
     Parameters
     ----------
         m: array_like
             Current magnetization as a Numpy array of floats with shape (3,).
-        params: dictionary with items:
-            K_u: float
-            First order crystal anisotropy constant (J/m^3).
-            M_s: float
-                Saturation magnetization module (A/m).
-            u_k: array_like
-                Direction of easy axis as a Numpy array of floats with shape (3,).
-            p: array_like
-                Spin polarization unit vector as a Numpy array of floats with shape (3,).
-            a_para: float
-                Parallel STT coefficient.
-            a_ortho: float
-                Orthogonal STT coefficient.
-            V: float
-                Applied voltage (V).
-            H_app: array_like
-                Externally applied magnetic field as a Numpy array of floats with shape (3,).
-            N: array_like
-                Demagnetization tensor as a Numpy array of floats with shape (3,3).
         stt_enable: bool
             True if the STT contribution should be computed.
-
+        **kwargs: MaterialProps
+            Dictionary defining the properties of the material.
     Returns
     -------
         H_eff: array_like
             The effective field as a Numpy array of floats with shape (3,).
     """
     # magneto-crystalline anisotropy term
-    H_mca = 2*params["K_u"]/(cst.mu_0*params["M_s"])*np.dot(params["u_k"], m)*params["u_k"]
+    H_mca = (
+        2
+        * kwargs["K_u"]
+        / (cst.mu_0 * kwargs["M_s"])
+        * np.dot(kwargs["u_k"], m)
+        * kwargs["u_k"]
+    )
 
     # demagnetization energy term
-    H_d = -params["M_s"]*(np.matmul(params["N"], m))
+    H_d = -kwargs["M_s"] * (np.matmul(kwargs["N"], m))
 
     # STT term
     if stt_enable:
-        H_STT = params["a_para"]*params["V"]*np.cross(m,params["p"]) - params["a_ortho"]*params["p"]*(params["V"]**2)
+        H_STT = kwargs["a_para"] * kwargs["V"] * np.cross(m, kwargs["p"]) - kwargs[
+            "a_ortho"
+        ] * kwargs["p"] * (kwargs["V"] ** 2)
     else:
         H_STT = np.zeros(3, dtype=np.float64)
 
-    return H_mca + params["H_app"] + H_d + H_STT
+    return H_mca + kwargs["H_app"] + H_d + H_STT

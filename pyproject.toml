@@ -32,3 +32,6 @@ exclude = [
     ".vscode",
     ".github"
 ]
+
+[mypy]
+plugins = numpy.typing.mypy_plugin
