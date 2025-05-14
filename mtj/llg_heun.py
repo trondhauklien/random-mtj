@@ -1,3 +1,5 @@
+from typing import Unpack
+
 import numpy as np
 import numpy.typing as ntp
 
@@ -27,7 +29,7 @@ def LLG_Heun(
     stt_enable: bool = True,
     recompute_H_th: bool = True,
     recompute_H_eff: bool = True,
-    **kwargs: MaterialProps,
+    **kwargs: Unpack[MaterialProps],
 ) -> ntp.NDArray[np.float64]:
     """Calculates the next time step magnetization using Heun's method, with the possibility to
     recompute the total field H_tot at the intermediate step.
