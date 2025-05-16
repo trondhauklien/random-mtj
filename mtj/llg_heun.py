@@ -6,7 +6,7 @@ import numpy.typing as ntp
 from mtj.constants import GYROMAGNETIC_RATIO, VACUUM_PERMEABILITY
 from mtj.calc_Heff import calc_Heff
 from mtj.calc_Hth import compute_thermal_field
-from mtj.typing import MaterialProps
+from mtj.types import MaterialProps
 
 
 def LLG_rhs(m_vec, H_vec, gamma0, alpha):

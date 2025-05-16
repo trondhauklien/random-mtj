@@ -2,7 +2,7 @@ from typing import Unpack
 import numpy as np
 import numpy.typing as npt
 import scipy.constants as cst
-from mtj.typing import MaterialProps
+from mtj.types import MaterialProps
 
 
 def calc_Heff(
