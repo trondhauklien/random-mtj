@@ -81,7 +81,7 @@ def calc_e(
     # energy contribution comes from the perpendicular term ("a_ortho"), which
     # we define by analogy with an externally applied magnetic field.
     if stt_enable:
-        e_stt = -cst.mu_0*cst.mu_0*m_cst.GYROMAGNETIC_RATIO*kwargs["a_ortho"]*\
+        e_stt = -cst.mu_0*kwargs["K_u"]*cst.mu_0*m_cst.GYROMAGNETIC_RATIO*kwargs["a_ortho"]*\
                 np.dot(m,kwargs["p"])
 
     return e_app + e_dem + e_k + e_stt
