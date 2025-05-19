@@ -76,12 +76,10 @@ def calc_e(
     e_k = kwargs["K_u"]*(1-np.dot(m,kwargs["u_k"])**2)
 
     e_stt = 0
-    # From the STT torque: the parallel component is always orthogonal to m,
-    # leading to a precessional motion and no associated potential energy. The
-    # energy contribution comes from the perpendicular term ("a_ortho"), which
-    # we define by analogy with an externally applied magnetic field.
-    if stt_enable:
-        e_stt = -cst.mu_0*kwargs["K_u"]*cst.mu_0*m_cst.GYROMAGNETIC_RATIO*kwargs["a_ortho"]*\
-                np.dot(m,kwargs["p"])
+    # From the STT torque: the energy contribution is defined by analogy with an externally
+    # applied magnetic field.
+    #if stt_enable:
+    #    e_stt = -cst.mu_0*kwargs["M_s"]*np.dot(m,kwargs["a_para"]*kwargs["V"]*np.cross(m,p)-
+    #                                           kwargs["a_ortho"]*(kwargs["V"]**2)*kwargs["p"]))
 
     return e_app + e_dem + e_k + e_stt
