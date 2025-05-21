@@ -172,3 +172,7 @@ cython_debug/
 
 # Output files
 *.csv
+output/*
+
+# Ignore macOS file
+.DS_Store
