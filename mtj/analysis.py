@@ -5,11 +5,14 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from rich.progress import track
+import numpy.typing as npt
+from rich.progress import Progress, BarColumn, TimeElapsedColumn, TimeRemainingColumn
 
 from mtj.calc_torque import calc_torque
 from mtj.constants import VACUUM_PERMEABILITY, e, hbar
-from mtj.llg_heun import LLG_Heun
+from mtj.llg_heun import LLG_Heun_Heff
+from mtj.calc_Heff import calc_e
+from mtj.types import MaterialProps
 
 
 class PerpSTT:
@@ -26,52 +29,63 @@ class PerpSTT:
     a_para = (
         hbar / (2 * e) * np.sqrt(3) / (4 * Ms * R_pp * volume * VACUUM_PERMEABILITY)
     )
-    max_run_time = 8e-9
+    max_run_time = 20e-9
     time_series = np.arange(0, max_run_time, dt)
     time_steps = len(time_series)
     T = 300  # K
     H_app = np.array([0, 0, 0])
+    invert_m0 = False
 
-    def __init__(self, random=False, num_samples=10, volume=None):
+    def __init__(self, random=False, num_samples=10, volume=None, volt_ampliude=1.0):
+        self.volt_amplitude = volt_ampliude
         if random:
             self.rng = np.random.default_rng()
-            self.voltages = self.rng.uniform(-1, 1, num_samples)
+            self.voltages = self.rng.uniform(-self.volt_amplitude, self.volt_amplitude, num_samples)
         else:
-            self.voltages = np.linspace(-1, 1, num_samples)
+            self.voltages = np.linspace(-self.volt_amplitude, self.volt_amplitude, num_samples)
 
         if volume:
             self.volume = volume
 
         self.m = np.zeros(shape=(num_samples, self.time_steps, 3), dtype=np.float32)
         self.torques = np.zeros(shape=(num_samples, self.time_steps), dtype=np.float32)
+        self.energy = np.zeros(shape=(num_samples, self.time_steps), dtype=np.float32)
 
         self.start_date = f"{datetime.now().strftime('%Y-%m-%d-%H%M%S')}"
 
-        # self.progress = Progress(
-        #     "[progress.description]{task.description}",
-        #     BarColumn(),
-        #     "[progress.percentage]{task.percentage:>3.0f}%",
-        #     TimeRemainingColumn(),
-        #     TimeElapsedColumn(),
-        #     refresh_per_second=1,  # bit slower updates
-        # )
-        # self.progress_task = self.progress.add_task(
-        #     "[green]Progress:", total=num_samples
-        # )
-
     def do_simulations(self):
+        progress = Progress(
+            "[progress.description]{task.description}",
+            BarColumn(),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            TimeRemainingColumn(),
+            TimeElapsedColumn(),
+            refresh_per_second=1,  # bit slower updates
+        )
+        progress_task = progress.add_task("[green]Progress:", total=len(self.voltages))
+        progress.start()
         simulation_start = time.time()
+        results = []
         with ProcessPoolExecutor() as executor:
-            results = list(
-                executor.map(
-                    self.calculate_magnetization, self.m, self.voltages, self.torques
-                )
+            res = executor.map(
+                self.calculate_magnetization,
+                self.m,
+                self.voltages,
+                self.torques,
+                self.energy,
             )
 
+            for result in res:
+                results.append(result)
+                progress.advance(progress_task)
+        progress.refresh()
+        progress.stop()
+        progress.console.clear_live()
         # Unpack results into self.m and self.torque
-        self.m, self.torques = zip(*results)
+        self.m, self.torques, self.energy = zip(*results)
         self.m = np.array(self.m)
         self.torques = np.array(self.torques)
+        self.energy = np.array(self.energy)
 
         simulation_end = time.time()
 
@@ -84,32 +98,43 @@ class PerpSTT:
         np.save(output_dir / "voltages", self.voltages)
         np.save(output_dir / "time_series", self.time_series)
         np.save(output_dir / "torques", self.torques)
+        np.save(output_dir / "energy", self.energy)
 
-    def calculate_magnetization(self, m, v, torque):
-        m0 = self.m0 if v < 0 else -self.m0
+    def calculate_magnetization(
+        self, m: npt.NDArray, v: int, torque: npt.NDArray, energy: npt.NDArray
+    ):
+        m0 = self.m0 if v < 0 and self.invert_m0 else -self.m0
         m[0] = m0 / np.linalg.norm(m0)
+
+        params: MaterialProps = {
+            "K_u": self.K_u,
+            "M_s": self.Ms,
+            "u_k": self.u_k,
+            "p": self.p,
+            "a_para": self.a_para,
+            "a_ortho": 0,
+            "V": v,
+            "H_app": self.H_app,
+            "N": self.N,
+        }
 
         for i, _ in enumerate(self.time_series[:-1]):
             # Calculate the magnetization for the next time step
-            m[i + 1], H_eff = LLG_Heun(
+            m[i + 1], H_eff = LLG_Heun_Heff(
                 m_i=m[i],
                 T=self.T,
                 Vol=self.volume,
                 dt=self.dt,
                 alpha=self.alpha,
-                H_app=self.H_app,
-                M_s=self.Ms,
-                K_u=self.K_u,
-                u_k=self.u_k,
-                N=self.N,
-                p=self.p,
-                a_para=self.a_para,
-                a_ortho=0,
-                V=v,
+                **params,
             )
             torque[i + 1] = calc_torque(m[i + 1], H_eff, self.Ms)
+            energy[i + 1] = calc_e(m[i + 1], stt_enable=True, **params)
 
-        return m, torque
+            if torque[i + 1] < 0.001:
+                break
+
+        return m, torque, energy
 
     def get_ouput_dir(self):
         base_path = Path(__file__).parent.parent
@@ -125,9 +150,9 @@ class PerpSTT:
             PerpSTT.plot_unit_sphere(sphere_ax, self.m[i], "m", f"{self.voltages[i]} V")
 
             ax = fig.add_subplot(2, len(indices), len(indices) + 1 + i)
-            ax.plot(self.time_series, self.torques[i])
+            ax.plot(self.time_series, self.energy[i] / 1000)
             ax.set_xlabel("Time (s)")
-            ax.set_ylabel("|m x Heff|/ Ms")
+            ax.set_ylabel("Normalized energy (kJ/$m^3$)")
 
         output_dir = self.get_ouput_dir()
         fig.savefig(output_dir / "trajectories.png")
