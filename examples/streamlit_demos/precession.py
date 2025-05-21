@@ -25,32 +25,41 @@ orientation_axes = {
 demag_tensor = {"thin film diag(0, 0, 1)": np.diag([0, 0, 1])}
 
 params: MaterialProps = {
-    "K_u": 5e5,
+    "K_u": 0.02 / VACUUM_PERMEABILITY,
     "M_s": 1 / VACUUM_PERMEABILITY,
-    "u_k": orientation_axes["z direction (0, 0, 1)"],
+    "u_k": orientation_axes["x direction (1, 0, 0)"],
     "p": orientation_axes["z direction (0, 0, 1)"],
     "a_para": 0,
     "a_ortho": 0,
     "V": 0,
-    "H_app": 0,
+    "H_app": np.array([0, -0.04 / VACUUM_PERMEABILITY, 0]),
     "N": demag_tensor["thin film diag(0, 0, 1)"],
 }
 
 Tn = 5e-9  # (s)
-dt = 1e-12  # time step (s)
-plotting_speed = 50
+dt = 1e-13  # time step (s)
+plotting_speed = 100
 
-m0 = np.array([0.1, 0.1, 1], dtype=np.float32)
+m0 = np.array([1, 0.1, 0.1], dtype=np.float32)
 
 
 def normalize_m0(m0: str):
     interpreted = np.fromstring(m0, dtype=np.float32, sep=" ")
-    noisy = interpreted + np.random.normal(0, 0.05, 3)
+    noisy = interpreted
     return noisy / np.linalg.norm(noisy)
 
 
 with st.sidebar:
-    m0 = normalize_m0(st.text_input("$m_0$", "0 0 1"))
+    m0 = normalize_m0(st.text_input("$m_0$", "1 0 0"))
+    st.write("$H_{app, y}/M_s$")
+
+    left, middle, right = st.columns(3)
+    if left.button("-0.04", use_container_width=True):
+        params["H_app"] = np.array([0, -0.04, 0])
+    if middle.button("-0.0201", use_container_width=True):
+        params["H_app"] = np.array([0, -0.0201, 0])
+    if right.button("-0.019", use_container_width=True):
+        params["H_app"] = np.array([0, -0.019, 0])
 
     with st.form("addition"):
         with st.expander("Mag. Parameters"):
@@ -64,19 +73,17 @@ with st.sidebar:
                 "$K_u$", value=params["K_u"], format="%0.1e"
             )
             params["u_k"] = orientation_axes[
-                st.selectbox("$u_k$", options=orientation_axes.keys(), index=2)
+                st.selectbox("$u_k$", options=orientation_axes.keys(), index=0)
             ]
-            params["p"] = orientation_axes[
-                st.selectbox("$p$", options=list(orientation_axes.keys())[:-1], index=2)
-            ]
-            H_app = st.number_input("$H_{app}$", value=0)
-            h_app = orientation_axes[
-                st.selectbox(
-                    "$h_{app}$",
-                    options=list(orientation_axes.keys())[:-1],
-                    index=2,
+            params["H_app"] = (
+                np.fromstring(
+                    st.text_input("$H_{app}/M_s$", "0 -0.04 0"),
+                    dtype=np.float32,
+                    sep=" ",
                 )
-            ]
+                * params["M_s"]
+            )
+
         Tn = st.number_input("End Time", min_value=0.0, value=Tn, format="%0.1e")
         dt = st.number_input(
             r"Step Size ($\Delta t$)", min_value=0.0, value=dt, format="%0.1e"
@@ -85,7 +92,7 @@ with st.sidebar:
             "Plotting Speed", min_value=1, max_value=100, step=1, value=plotting_speed
         )
 
-        submit = st.form_submit_button("add")
+        submit = st.form_submit_button("Run Simulation")
 
 
 def plot_unit_sphere(ax, m, label):
@@ -111,7 +118,7 @@ def plot_unit_sphere(ax, m, label):
     return line, arrow
 
 
-alpha = 0.008  # Damping factor (arbitrarily chosen in this demo)
+alpha = 0  # Damping factor (arbitrarily chosen in this demo)
 T = 0  # Temperature (K) - H_th diabled if 0
 Vol = 1e-9 * 25e-9**2 * np.pi  # Volume
 stt_enable = False

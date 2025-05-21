@@ -83,7 +83,7 @@ with st.sidebar:
             "Plotting Speed", min_value=1, max_value=100, step=1, value=plotting_speed
         )
 
-        submit = st.form_submit_button("add")
+        submit = st.form_submit_button("Run Simulation")
 
 
 def plot_unit_sphere(ax, m, label):
