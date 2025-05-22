@@ -38,6 +38,7 @@ params: MaterialProps = {
 
 Tn = 5e-9  # (s)
 dt = 1e-13  # time step (s)
+alpha = 0.0
 plotting_speed = 100
 
 m0 = np.array([1, 0.1, 0.1], dtype=np.float32)
@@ -59,11 +60,10 @@ with st.sidebar:
     }
 
     ext_fields = [
-        np.array([0, -0.04, 0])*params["M_s"],
-        np.array([0, -0.0201, 0])*params["M_s"],
-        np.array([0, -0.019, 0])*params["M_s"],
+        np.array([0, -0.04, 0]) * params["M_s"],
+        np.array([0, -0.0201, 0]) * params["M_s"],
+        np.array([0, -0.019, 0]) * params["M_s"],
     ]
-
 
     H_app_ind = st.segmented_control(
         "$H_{app, y}/M_s$",
@@ -99,7 +99,9 @@ with st.sidebar:
                 )
                 * params["M_s"]
             )
-
+        alpha = st.number_input(
+            r"Damping Parameter $\alpha$", min_value=0.0, value=alpha
+        )
         Tn = st.number_input("End Time", min_value=0.0, value=Tn, format="%0.1e")
         dt = st.number_input(
             r"Step Size ($\Delta t$)", min_value=0.0, value=dt, format="%0.1e"
@@ -134,7 +136,6 @@ def plot_unit_sphere(ax, m, label):
     return line, arrow
 
 
-alpha = 0  # Damping factor (arbitrarily chosen in this demo)
 T = 0  # Temperature (K) - H_th diabled if 0
 Vol = 1e-9 * 25e-9**2 * np.pi  # Volume
 stt_enable = False

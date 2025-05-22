@@ -37,6 +37,7 @@ params: MaterialProps = {
 Tn = 5e-9  # (s)
 dt = 1e-13  # time step (s)
 plotting_speed = 50
+alpha = 0.008
 
 m0 = np.array([0.1, 0.1, 1], dtype=np.float32)
 
@@ -67,16 +68,18 @@ with st.sidebar:
             params["p"] = orientation_axes[
                 st.selectbox("$p$", options=list(orientation_axes.keys())[:-1], index=2)
             ]
-            params["H_app"] = (
-                np.fromstring(
-                    st.text_input(
-                        "$H_{app}$",
-                        " ".join(np.astype(params["H_app"], str)),
-                    ),
-                    dtype=np.float32,
-                    sep=" ",
-                )
+            params["H_app"] = np.fromstring(
+                st.text_input(
+                    "$H_{app}$",
+                    " ".join(np.astype(params["H_app"], str)),
+                ),
+                dtype=np.float32,
+                sep=" ",
             )
+        alpha = st.number_input(
+            r"Damping Parameter $\alpha$", min_value=0.0, value=alpha, format="%0.3f"
+        )
+
         Tn = st.number_input("End Time", min_value=0.0, value=Tn, format="%0.1e")
         dt = st.number_input(
             r"Step Size ($\Delta t$)", min_value=0.0, value=dt, format="%0.1e"
@@ -111,7 +114,6 @@ def plot_unit_sphere(ax, m, label):
     return line, arrow
 
 
-alpha = 0.008  # Damping factor (arbitrarily chosen in this demo)
 T = 0  # Temperature (K) - H_th diabled if 0
 Vol = 1e-9 * 25e-9**2 * np.pi  # Volume
 stt_enable = False

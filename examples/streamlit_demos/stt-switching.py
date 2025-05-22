@@ -43,9 +43,9 @@ params: MaterialProps = {
     "M_s": 1000e3,
     "u_k": orientation_axes["z direction (0, 0, 1)"],
     "p": orientation_axes["z direction (0, 0, 1)"],
-    "a_para": 0.,
+    "a_para": 0.0,
     "a_ortho": 0,
-    "V": -1.,
+    "V": -1.0,
     "H_app": np.array([0, 0, 0]),
     "N": demag_tensor["thin film diag(0, 0, 1)"],
 }
@@ -74,17 +74,18 @@ with st.sidebar:
             params["u_k"] = orientation_axes[
                 st.selectbox("$u_k$", options=orientation_axes.keys(), index=2)
             ]
-            params["H_app"] = (
-                np.fromstring(
-                    st.text_input(
-                        "$H_{app}$",
-                        " ".join(np.astype(params["H_app"], str)),
-                    ),
-                    dtype=np.float32,
-                    sep=" ",
-                )
+            params["H_app"] = np.fromstring(
+                st.text_input(
+                    "$H_{app}$",
+                    " ".join(np.astype(params["H_app"], str)),
+                ),
+                dtype=np.float32,
+                sep=" ",
             )
 
+        alpha = st.number_input(
+            r"Damping Parameter $\alpha$", min_value=0.0, value=alpha
+        )
         Tn = st.number_input("End Time", min_value=0.0, value=Tn, format="%0.1e")
         dt = st.number_input(
             r"Step Size ($\Delta t$)", min_value=0.0, value=dt, format="%0.1e"
@@ -100,7 +101,13 @@ with st.sidebar:
 
         volume = thickness * area
 
-        params["a_para"] = hbar / (2 * e) * np.sqrt(3) / (4 * params["M_s"] * R_pp * volume) / VACUUM_PERMEABILITY
+        params["a_para"] = (
+            hbar
+            / (2 * e)
+            * np.sqrt(3)
+            / (4 * params["M_s"] * R_pp * volume)
+            / VACUUM_PERMEABILITY
+        )
 
         submit = st.form_submit_button("Run Simulation")
 
