@@ -83,7 +83,6 @@ with st.sidebar:
                     dtype=np.float32,
                     sep=" ",
                 )
-                * params["M_s"]
             )
 
         Tn = st.number_input("End Time", min_value=0.0, value=Tn, format="%0.1e")

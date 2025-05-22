@@ -30,12 +30,12 @@ params: MaterialProps = {
     "a_para": 0,
     "a_ortho": 0,
     "V": 0,
-    "H_app": 0,
+    "H_app": np.zeros(3, dtype=np.float32),
     "N": demag_tensor["thin film diag(0, 0, 1)"],
 }
 
 Tn = 5e-9  # (s)
-dt = 1e-12  # time step (s)
+dt = 1e-13  # time step (s)
 plotting_speed = 50
 
 m0 = np.array([0.1, 0.1, 1], dtype=np.float32)
@@ -67,20 +67,22 @@ with st.sidebar:
             params["p"] = orientation_axes[
                 st.selectbox("$p$", options=list(orientation_axes.keys())[:-1], index=2)
             ]
-            H_app = st.number_input("$H_{app}$", value=0)
-            h_app = orientation_axes[
-                st.selectbox(
-                    "$h_{app}$",
-                    options=list(orientation_axes.keys())[:-1],
-                    index=2,
+            params["H_app"] = (
+                np.fromstring(
+                    st.text_input(
+                        "$H_{app}$",
+                        " ".join(np.astype(params["H_app"], str)),
+                    ),
+                    dtype=np.float32,
+                    sep=" ",
                 )
-            ]
+            )
         Tn = st.number_input("End Time", min_value=0.0, value=Tn, format="%0.1e")
         dt = st.number_input(
             r"Step Size ($\Delta t$)", min_value=0.0, value=dt, format="%0.1e"
         )
         plotting_speed = st.slider(
-            "Plotting Speed", min_value=1, max_value=100, step=1, value=plotting_speed
+            "Plotting Speed", min_value=1, max_value=200, step=1, value=plotting_speed
         )
 
         submit = st.form_submit_button("Run Simulation")
@@ -129,6 +131,7 @@ with plot_placeholder:
 
 
 if submit:
+    print(params)
     for i, t in enumerate(time_series[:-1]):
         # plt.close()
         m[i + 1] = LLG_Heun(
