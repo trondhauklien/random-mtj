@@ -1,0 +1,177 @@
+import streamlit as st
+import numpy as np
+
+from mtj.types import MaterialProps
+from mtj.constants import VACUUM_PERMEABILITY, hbar, e
+
+import numpy.typing as npt
+import matplotlib.pyplot as plt
+from matplotlib.ticker import EngFormatter
+import time
+
+from mtj.init import init_m
+from mtj.llg_heun import LLG_Heun
+
+st.title("STT Switching")
+
+Tn = 5e-9  # (s)
+dt = 1e-13  # time step (s)
+plotting_speed = 100
+alpha = 0.01  # Damping factor (arbitrarily chosen in this demo)
+T = 0  # Temperature (K) - H_th diabled if 0
+stt_enable = True
+recompute_H_th = False
+recompute_H_eff = False
+time_series = np.arange(0, Tn, dt)
+m0 = np.array([0.1, 0.1, 1], dtype=np.float32)
+
+R_pp = 2e3  # Ohm
+volume = 50e-9 * 50e-9 * 1e-9  # m^3
+
+
+orientation_axes = {
+    "x direction (1, 0, 0)": np.array([1, 0, 0]),
+    "y direction (0, 1, 0)": np.array([0, 1, 0]),
+    "z direction (0, 0, 1)": np.array([0, 0, 1]),
+    "xy plane (1, 1, 0)": np.array([1, 1, 0]),
+}
+
+demag_tensor = {"thin film diag(0, 0, 1)": np.diag([0, 0, 1])}
+
+params: MaterialProps = {
+    "K_u": 10e5,
+    "M_s": 1000e3,
+    "u_k": orientation_axes["z direction (0, 0, 1)"],
+    "p": orientation_axes["z direction (0, 0, 1)"],
+    "a_para": 0.0,
+    "a_ortho": 0,
+    "V": -1.0,
+    "H_app": np.array([0, 0, 0]),
+    "N": demag_tensor["thin film diag(0, 0, 1)"],
+}
+
+
+def normalize_m0(m0: str):
+    interpreted = np.fromstring(m0, dtype=np.float32, sep=" ")
+    noisy = interpreted + np.random.normal(0, 0.05, 3)
+    return noisy / np.linalg.norm(noisy)
+
+
+with st.sidebar:
+    m0 = normalize_m0(st.text_input("$m_0$", "0 0 1"))
+
+    with st.form("addition"):
+        with st.expander("Mag. Parameters"):
+            params["N"] = demag_tensor[
+                st.selectbox("$N$", options=demag_tensor.keys(), index=0)
+            ]
+            params["M_s"] = st.number_input(
+                "$M_s$", value=params["M_s"], format="%0.1e"
+            )
+            params["K_u"] = st.number_input(
+                "$K_u$", value=params["K_u"], format="%0.1e"
+            )
+            params["u_k"] = orientation_axes[
+                st.selectbox("$u_k$", options=orientation_axes.keys(), index=2)
+            ]
+            params["H_app"] = np.fromstring(
+                st.text_input(
+                    "$H_{app}$",
+                    " ".join(np.astype(params["H_app"], str)),
+                ),
+                dtype=np.float32,
+                sep=" ",
+            )
+
+        alpha = st.number_input(
+            r"Damping Parameter $\alpha$", min_value=0.0, value=alpha
+        )
+        Tn = st.number_input("End Time", min_value=0.0, value=Tn, format="%0.1e")
+        dt = st.number_input(
+            r"Step Size ($\Delta t$)", min_value=0.0, value=dt, format="%0.1e"
+        )
+        plotting_speed = st.slider(
+            "Plotting Speed", min_value=1, max_value=100, step=1, value=plotting_speed
+        )
+        params["V"] = st.slider(
+            "Voltage", min_value=-5.0, max_value=1.0, step=0.1, value=params["V"]
+        )
+        thickness = st.number_input("$t_{FL}$", value=1e-9, format="%0.1e")
+        area = st.number_input("$S$", value=50e-9 * 50e-9, format="%0.1e")
+
+        volume = thickness * area
+
+        params["a_para"] = (
+            hbar
+            / (2 * e)
+            * np.sqrt(3)
+            / (4 * params["M_s"] * R_pp * volume)
+            / VACUUM_PERMEABILITY
+        )
+
+        submit = st.form_submit_button("Run Simulation")
+
+
+def plot_unit_sphere(ax, m, label):
+    u = np.linspace(0, 2 * np.pi, 200)
+    v = np.linspace(0, np.pi, 200)
+    x = np.outer(np.cos(u), np.sin(v))
+    y = np.outer(np.sin(u), np.sin(v))
+    z = np.outer(np.ones(np.size(u)), np.cos(v))
+
+    arrow = ax.quiver(
+        0, 0, 0, m[-1, 0], m[-1, 1], m[-1, 2], color="red", lw=1, label="$m$"
+    )
+    ax.plot_surface(x, y, z, color="lightgray", alpha=0.2, rstride=10, cstride=10)
+    (line,) = ax.plot(m[:, 0], m[:, 1], m[:, 2], label=label, lw=2)
+
+    ax.set_xlabel(r"$m_x$")
+    ax.set_ylabel(r"$m_y$")
+    ax.set_zlabel(r"$m_z$")
+    ax.set_title(f"Magnetization {label}")
+    ax.set_box_aspect([1, 1, 1])
+    ax.legend()
+
+    return line, arrow
+
+
+m = init_m(m0, int(Tn / dt))
+
+
+fig, ax = plt.subplots(1, 1, subplot_kw={"projection": "3d"})
+line, arrow = plot_unit_sphere(ax, m, "Trajectory")
+
+plot_placeholder = st.empty()
+text_placeholder = st.empty()
+
+with plot_placeholder:
+    st.pyplot(fig)
+
+
+if submit:
+    print(params)
+    for i, t in enumerate(time_series[:-1]):
+        # plt.close()
+        m[i + 1] = LLG_Heun(
+            m[i],
+            T,
+            volume,
+            dt,
+            alpha,
+            stt_enable=stt_enable,
+            recompute_H_th=recompute_H_th,
+            recompute_H_eff=recompute_H_eff,
+            **params,
+        )
+        line.set_data_3d(m[: i + 1, :].T)
+        new_mag = np.array([[0, 0, 0], m[i + 1, :]])
+        arrow.set_segments([new_mag])
+
+        if i % plotting_speed == 0:
+            with plot_placeholder:
+                st.pyplot(fig)
+            with text_placeholder:
+                st.progress(
+                    i / len(time_series),
+                    f"Simulating {i / len(time_series) * 100:.2f}%",
+                )
