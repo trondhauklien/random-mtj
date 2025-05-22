@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 
 from mtj.types import MaterialProps
-from mtj.constants import VACUUM_PERMEABILITY
+from mtj.constants import VACUUM_PERMEABILITY, hbar, e
 
 import numpy.typing as npt
 import matplotlib.pyplot as plt
@@ -12,7 +12,21 @@ import time
 from mtj.init import init_m
 from mtj.llg_heun import LLG_Heun
 
-st.title("Precession")
+st.title("STT Switching")
+
+Tn = 5e-9  # (s)
+dt = 1e-13  # time step (s)
+plotting_speed = 100
+alpha = 0.01  # Damping factor (arbitrarily chosen in this demo)
+T = 0  # Temperature (K) - H_th diabled if 0
+stt_enable = True
+recompute_H_th = False
+recompute_H_eff = False
+time_series = np.arange(0, Tn, dt)
+m0 = np.array([0.1, 0.1, 1], dtype=np.float32)
+
+R_pp = 2e3  # Ohm
+volume = 50e-9 * 50e-9 * 1e-9  # m^3
 
 
 orientation_axes = {
@@ -25,54 +39,26 @@ orientation_axes = {
 demag_tensor = {"thin film diag(0, 0, 1)": np.diag([0, 0, 1])}
 
 params: MaterialProps = {
-    "K_u": 0.02 / VACUUM_PERMEABILITY,
-    "M_s": 1 / VACUUM_PERMEABILITY,
-    "u_k": orientation_axes["x direction (1, 0, 0)"],
+    "K_u": 10e5,
+    "M_s": 1000e3,
+    "u_k": orientation_axes["z direction (0, 0, 1)"],
     "p": orientation_axes["z direction (0, 0, 1)"],
     "a_para": 0,
     "a_ortho": 0,
-    "V": 0,
-    "H_app": np.array([0, -0.04 / VACUUM_PERMEABILITY, 0]),
+    "V": -1.,
+    "H_app": np.array([0, 0, 0]),
     "N": demag_tensor["thin film diag(0, 0, 1)"],
 }
-
-Tn = 5e-9  # (s)
-dt = 1e-13  # time step (s)
-plotting_speed = 100
-
-m0 = np.array([1, 0.1, 0.1], dtype=np.float32)
 
 
 def normalize_m0(m0: str):
     interpreted = np.fromstring(m0, dtype=np.float32, sep=" ")
-    noisy = interpreted
+    noisy = interpreted + np.random.normal(0, 0.05, 3)
     return noisy / np.linalg.norm(noisy)
 
 
 with st.sidebar:
-    m0 = normalize_m0(st.text_input("$m_0$", "1 0 0"))
-
-    option_map = {
-        0: "-0.04",
-        1: "-0.0201",
-        2: "-0.019",
-    }
-
-    ext_fields = [
-        np.array([0, -0.04, 0])*params["M_s"],
-        np.array([0, -0.0201, 0])*params["M_s"],
-        np.array([0, -0.019, 0])*params["M_s"],
-    ]
-
-
-    H_app_ind = st.segmented_control(
-        "$H_{app, y}/M_s$",
-        options=option_map.keys(),
-        format_func=lambda option: option_map[option],
-        selection_mode="single",
-    )
-    if H_app_ind:
-        params["H_app"] = ext_fields[H_app_ind]
+    m0 = normalize_m0(st.text_input("$m_0$", "0 0 1"))
 
     with st.form("addition"):
         with st.expander("Mag. Parameters"):
@@ -86,13 +72,13 @@ with st.sidebar:
                 "$K_u$", value=params["K_u"], format="%0.1e"
             )
             params["u_k"] = orientation_axes[
-                st.selectbox("$u_k$", options=orientation_axes.keys(), index=0)
+                st.selectbox("$u_k$", options=orientation_axes.keys(), index=2)
             ]
             params["H_app"] = (
                 np.fromstring(
                     st.text_input(
-                        "$H_{app}/M_s$",
-                        " ".join(np.astype(params["H_app"] / params["M_s"], str)),
+                        "$H_{app}$",
+                        " ".join(np.astype(params["H_app"], str)),
                     ),
                     dtype=np.float32,
                     sep=" ",
@@ -107,6 +93,15 @@ with st.sidebar:
         plotting_speed = st.slider(
             "Plotting Speed", min_value=1, max_value=100, step=1, value=plotting_speed
         )
+        params["V"] = st.slider(
+            "Voltage", min_value=-5.0, max_value=1.0, step=0.1, value=params["V"]
+        )
+        thickness = st.number_input("$t_{FL}$", value=1e-9, format="%0.1e")
+        area = st.number_input("$S$", value=50e-9 * 50e-9, format="%0.1e")
+
+        volume = thickness * area
+
+        params["a_para"] = hbar / (2 * e) * np.sqrt(3) / (4 * params["M_s"] * R_pp * volume)
 
         submit = st.form_submit_button("Run Simulation")
 
@@ -134,14 +129,8 @@ def plot_unit_sphere(ax, m, label):
     return line, arrow
 
 
-alpha = 0  # Damping factor (arbitrarily chosen in this demo)
-T = 0  # Temperature (K) - H_th diabled if 0
-Vol = 1e-9 * 25e-9**2 * np.pi  # Volume
-stt_enable = False
-recompute_H_th = False
-recompute_H_eff = False
-time_series = np.arange(0, Tn, dt)
 m = init_m(m0, int(Tn / dt))
+
 
 fig, ax = plt.subplots(1, 1, subplot_kw={"projection": "3d"})
 line, arrow = plot_unit_sphere(ax, m, "Trajectory")
@@ -154,12 +143,13 @@ with plot_placeholder:
 
 
 if submit:
+    print(params)
     for i, t in enumerate(time_series[:-1]):
         # plt.close()
         m[i + 1] = LLG_Heun(
             m[i],
             T,
-            Vol,
+            volume,
             dt,
             alpha,
             stt_enable=stt_enable,

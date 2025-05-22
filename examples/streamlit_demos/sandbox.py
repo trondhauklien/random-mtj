@@ -12,7 +12,7 @@ import time
 from mtj.init import init_m
 from mtj.llg_heun import LLG_Heun
 
-st.title("Introduction / Sandbox")
+st.title("Convergence")
 orientation_axes = {
     "x direction (1, 0, 0)": np.array([1, 0, 0]),
     "y direction (0, 1, 0)": np.array([0, 1, 0]),
